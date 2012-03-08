@@ -1,0 +1,94 @@
+*** index.py	2011-08-06 19:26:29.836294137 +0100
+--- Suncalendar.py	2011-08-06 19:29:09.166294640 +0100
+***************
+*** 29,34 ****
+--- 29,35 ----
+          self.lat = lat
+          self.lon = lon
+          self.d = date
++         self.d2 = date + timedelta(days=1);
+          if cal == "sunRiseSet":
+              name = "Sunrise and Sunset times for %fN, %fW"
+              start = "Sunrise"
+***************
+*** 49,54 ****
+--- 50,59 ----
+              name = "First launch and last landing times for %fN, %fW"
+              start = "First launch"
+              end = "Last landing"
++         elif cal == "dayNightTime":
++             name = "Daytime and Nighttime for %fN, %fW"
++             start = "Daytime"
++             end = "Nightime"
+          else:
+              name = "Times for %fN, %fW" # but it will error anyway.
+              start = "Start"
+***************
+*** 59,71 ****
+          self.v.add('description').value = "Show the sunrise and sunset times" \
+              + " for a given location for one year from the current date."
+          for date in range(days):
+!             riseTime, setTime = f(self.d.year, self.d.month, self.d.day,
+!                           lon, lat) # lat/long reversed.
+!             self.__addPoint(riseTime, start)
+!             self.__addPoint(setTime, end)
+!             self.d += timedelta(1)
+  
+!     def __addPoint(self, time, summary):
+          ev = self.v.add('vevent')
+          ev.add('summary').value = summary
+          ev.add('geo').value = "%f;%f" % (self.lat, self.lon)
+--- 64,82 ----
+          self.v.add('description').value = "Show the sunrise and sunset times" \
+              + " for a given location for one year from the current date."
+          for date in range(days):
+!             riseTime, setTime = f(self.d.year, self.d.month, self.d.day, lon, lat) # lat/long reversed.
+!             riseTime2, setTime2 = f(self.d2.year, self.d2.month, self.d2.day, lon, lat) # lat/long reversed.
+!             if cal == "dayNightTime":
+!                 self.__addPoint(riseTime, (setTime - (1.0 / 3600)) % 24, self.d, self.d, start)
+!                 self.__addPoint(setTime, (riseTime2 - (1.0 / 3600)) % 24, self.d, self.d2, end)
+!             else:
+!                 riseTime, setTime = f(self.d.year, self.d.month, self.d.day, lon, lat) # lat/long reversed.
+!                 self.__addPoint(riseTime, riseTime, self.d, self.d, start)
+!                 self.__addPoint(setTime, setTime, self.d, self.d, end)
+!             self.d += timedelta(days=1)
+!             self.d2 += timedelta(days=1)
+  
+!     def __addPoint(self, time, time2, date, date2, summary):
+          ev = self.v.add('vevent')
+          ev.add('summary').value = summary
+          ev.add('geo').value = "%f;%f" % (self.lat, self.lon)
+***************
+*** 74,81 ****
+          end = ev.add('dtend')
+          minute = 60 * (time - int(time))
+          second = 60 * (minute - int(minute))
+!         start.value = end.value = datetime(self.d.year, self.d.month,
+!                 self.d.day, int(time), int(minute), int(second),
+                  tzinfo=self.utc)
+          ev.add('uid').value = str(calendar.timegm(start.value.timetuple())) \
+                  + "-1@suncalendar"
+--- 85,97 ----
+          end = ev.add('dtend')
+          minute = 60 * (time - int(time))
+          second = 60 * (minute - int(minute))
+!         minute2 = 60 * (time2 - int(time2))
+!         second2 = 60 * (minute2 - int(minute2))
+!         start.value = datetime(date.year, date.month,
+!                 date.day, int(time), int(minute), int(second),
+!                 tzinfo=self.utc)
+!         end.value = datetime(date2.year, date2.month,
+!                 date2.day, int(time2), int(minute2), int(second2),
+                  tzinfo=self.utc)
+          ev.add('uid').value = str(calendar.timegm(start.value.timetuple())) \
+                  + "-1@suncalendar"
+***************
+*** 161,166 ****
+--- 177,183 ----
+  <option value="civilTwilight">Civil dawn/dusk</option>
+  <option value="nauticalTwilight">Nautical dawn/dusk</option>
+  <option value="astronomicalTwilight">Astronomical dawn/dusk</option>
++ <option value="dayNightTime">Daytime/Nighttime</option>
+  </select><br />
+  <input type="submit" value="Download .ics" />
+  <input type="submit" name="URL" value="Show Link"
